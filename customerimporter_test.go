@@ -21,9 +21,14 @@ func BenchmarkCountDomains(b *testing.B) {
 		b.Fatalf("failed to read customers: %v", err)
 	}
 
+	var providers []DomainProvider
+	for _, c := range customers {
+		providers = append(providers, c)
+	}
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		CountDomains(customers)
+		CountDomains(providers)
 	}
 }
 
@@ -40,9 +45,14 @@ func BenchmarkCountDomainsConcurrent(b *testing.B) {
 		b.Fatalf("failed to read customers: %v", err)
 	}
 
+	var providers []DomainProvider
+	for _, c := range customers {
+		providers = append(providers, c)
+	}
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		CountDomainsConcurrent(customers)
+		CountDomainsConcurrent(providers)
 	}
 }
 
@@ -76,7 +86,12 @@ func BenchmarkReadCustomersFromCSVAndCountDomains(b *testing.B) {
 			b.Fatalf("Failed to read customers: %v", err)
 		}
 
-		_ = CountDomains(customers)
+		var providers []DomainProvider
+		for _, c := range customers {
+			providers = append(providers, c)
+		}
+
+		_ = CountDomains(providers)
 	}
 }
 
@@ -94,7 +109,12 @@ func BenchmarkReadCustomersFromCSVAndCountDomainsConcurrent(b *testing.B) {
 			b.Fatalf("Failed to read customers: %v", err)
 		}
 
-		_ = CountDomainsConcurrent(customers)
+		var providers []DomainProvider
+		for _, c := range customers {
+			providers = append(providers, c)
+		}
+
+		_ = CountDomainsConcurrent(providers)
 	}
 }
 
@@ -360,7 +380,12 @@ func TestCountDomains(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := CountDomains(tt.customers)
+			var providers []DomainProvider
+			for _, c := range tt.customers {
+				providers = append(providers, c)
+			}
+
+			got := CountDomains(providers)
 
 			//special case for no data
 			if len(got) == 0 && len(tt.want) == 0 {
@@ -412,7 +437,12 @@ func TestCountDomainsConcurrent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := CountDomainsConcurrent(tt.customers)
+			var providers []DomainProvider
+			for _, c := range tt.customers {
+				providers = append(providers, c)
+			}
+
+			got := CountDomainsConcurrent(providers)
 
 			//special case for no data
 			if len(got) == 0 && len(tt.want) == 0 {

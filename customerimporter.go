@@ -91,6 +91,15 @@ type customer struct {
 	IPAddress net.IP
 }
 
+// DomainProvider is an interface for types that can provide a domain string.
+type DomainProvider interface {
+	GetDomain() string
+}
+
+func (c customer) GetDomain() string {
+	return c.Email.extractDomain()
+}
+
 // Type "domainCount" groups domain name and its occurences in a CSV file in a single struct.
 type domainCount struct {
 	Domain string
@@ -114,28 +123,26 @@ func sortDomainCounts(domainCounts map[string]int) []domainCount {
 }
 
 // Function "CountDomains" returns a sorted slice of "domainCount" type, with unique domain names and their respective count.
-func CountDomains(customers []customer) []domainCount {
+func CountDomains(providers []DomainProvider) []domainCount {
 	domainCounts := make(map[string]int)
 
-	for _, customer := range customers {
-		domain := customer.Email.extractDomain()
+	for _, provider := range providers {
+		domain := provider.GetDomain()
 		domainCounts[domain]++
 	}
 
-	sortedDomainCounts := sortDomainCounts(domainCounts)
-
-	return sortedDomainCounts
+	return sortDomainCounts(domainCounts)
 }
 
-// Function "CountDomains" returns a sorted slice of "domainCount" type, with unique domain names and their respective count.
+// Function "CountDomainsConcurrent" returns a sorted slice of "domainCount" type, with unique domain names and their respective count.
 // It utilizes goroutines to speed up the process for larger datasets.
-func CountDomainsConcurrent(customers []customer) []domainCount {
+func CountDomainsConcurrent(providers []DomainProvider) []domainCount {
 	domainCounts := make(map[string]int)
 
-	//optimize to machine
+	// Optimize to machine
 	numCores := runtime.NumCPU()
-	totalCustomers := len(customers)
-	chunkSize := totalCustomers / numCores
+	totalProviders := len(providers)
+	chunkSize := totalProviders / numCores
 
 	if chunkSize < 1 {
 		chunkSize = MIN_CHUNK_SIZE
@@ -144,10 +151,10 @@ func CountDomainsConcurrent(customers []customer) []domainCount {
 	var wg sync.WaitGroup
 	mu := sync.Mutex{}
 
-	processChunk := func(chunk []customer) {
+	processChunk := func(chunk []DomainProvider) {
 		localCounts := make(map[string]int)
-		for _, customer := range chunk {
-			domain := customer.Email.extractDomain()
+		for _, provider := range chunk {
+			domain := provider.GetDomain()
 			localCounts[domain]++
 		}
 
@@ -159,20 +166,18 @@ func CountDomainsConcurrent(customers []customer) []domainCount {
 		wg.Done()
 	}
 
-	for i := 0; i < len(customers); i += chunkSize {
+	for i := 0; i < totalProviders; i += chunkSize {
 		end := i + chunkSize
-		if end > len(customers) {
-			end = len(customers)
+		if end > totalProviders {
+			end = totalProviders
 		}
 		wg.Add(1)
-		go processChunk(customers[i:end])
+		go processChunk(providers[i:end])
 	}
 
 	wg.Wait()
 
-	sortedDomainCounts := sortDomainCounts(domainCounts)
-
-	return sortedDomainCounts
+	return sortDomainCounts(domainCounts)
 }
 
 // Function "parseCustomerLine" maps single line from CSV file to "customer" struct. It returns an error if data is not valid.
