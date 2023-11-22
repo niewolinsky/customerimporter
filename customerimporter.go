@@ -91,7 +91,7 @@ type customer struct {
 	IPAddress net.IP
 }
 
-// DomainProvider is an interface for types that can provide a domain string.
+// Interface "DomainProvider" is for types that can provide a domain string.
 type DomainProvider interface {
 	GetDomain() string
 }
